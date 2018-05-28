@@ -1,9 +1,26 @@
 [[getting-started-rack]]
 == Getting started with Rack
 
+Add the gem to your `Gemfile`:
+
 [source,ruby]
 ----
-# config.ru
+gem 'elastic-apm'
+----
+
+Create a file `config/elastic_apm.yml`:
+
+[source,yaml]
+----
+server_url: http://localhost:8100
+secret_token: ''
+----
+
+Include the middleware, start (and stop) Elastic APM when booting your app:
+
+[source,ruby]
+----
+# Example config.ru
 
 require 'sinatra/base'
 
@@ -14,10 +31,7 @@ class MySinatraApp < Sinatra::Base
 end
 
 # Takes optional ElasticAPM::Config values
-ElasticAPM.start(
-  app: MySinatraApp, # required
-  server_url: 'http://localhost:8200'
-)
+ElasticAPM.start(app: MySinatraApp, ...)
 
 run MySinatraApp
 
