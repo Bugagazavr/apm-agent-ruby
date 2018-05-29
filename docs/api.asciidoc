@@ -1,7 +1,8 @@
 [[api]]
 == Public API
 
-Although most usage is covered automatically when using the APM Agent it also has a public API that allows custom usage.
+Although most usage is covered automatically, Elastic APM also has a public API that
+allows custom usage.
 
 [float]
 [[agent-life-cycle]]
@@ -20,7 +21,8 @@ To create and start an ElasticAPM agent use `ElasticAPM.start`:
 ElasticAPM.start(server_url: 'http://localhost:8200')
 ----
 
-  * `config`: A hash or `ElasticAPM::Config` instance with configuration options. See <<configuration,Configuration>>.
+  * `config`: An optional hash or `ElasticAPM::Config` instance with configuration
+  options.  See <<configuration,Configuration>>.
 
 If you are using Rails this is done automatically for you.
 
@@ -30,7 +32,8 @@ If you are using Rails this is done automatically for you.
 [[api-stop]]
 ==== `ElasticAPM.stop`
 
-Stop the currently running agent. Use this inside `at_exit` in your <<getting-started-rack,Rack app>> to gracefully shut down.
+Stop the currently running agent. Use this inside `at_exit` in your
+<<getting-started-rack,Rack app>> to gracefully shut down.
 
 [float]
 [[api-running]]
@@ -59,8 +62,10 @@ Returns the current `ElasticAPM::Transaction` or nil.
 
 Start a _transaction_ eg. a web request or background job.
 
-If called without a block you are expected to end and submit the transaction yourself.
-If given a block, the code inside will be wrapped in a transaction. You still need to submit it yourself with `transaction.submit(status)`.
+If called without a block you are expected to end the transaction yourself.
+If given a block, the code inside will be wrapped in a transaction.
+
+You need to submit it yourself with `transaction.submit(status)`.
 
 [source,ruby]
 ----
@@ -75,8 +80,10 @@ Arguments:
 
   * `name`: A name for your transaction. Transactions are grouped by name. **Required**.
   * `type`: A `type` for your transaction eg. `db.postgresql.sql`.
-  * `rack_env: env`: An optional Rack `env` used to enrich the transaction with information about the current request.
-  * `&block`: An optional block to wrap with the transaction. The block is passed the transaction as an optional argument.
+  * `context:`: An optional Context used to enrich the transaction with
+  information about the current request.
+  * `&block`: An optional block to wrap with the transaction. The block is passed the
+  transaction as an optional argument.
 
 Returns the transaction.
 
@@ -84,9 +91,11 @@ Returns the transaction.
 [[api-span]]
 ==== `ElasticAPM.span`
 
-Most transactions have nested spans signifying work of a specific sort eg. database queries or external web requests.
+Most transactions have nested spans signifying work of a specific sort eg. database
+queries or external web requests.
 
-If given a block, wrap the code inside in a span. If not you are expected to close the span yourself with `span.done(result)`.
+If given a block, wrap the code inside in a span.
+If not you are expected to close the span yourself with `span.done(result)`.
 
 [source,ruby]
 ----
@@ -102,7 +111,9 @@ Arguments:
   * `name`: A name for your span. **Required**.
   * `type`: The type of work eg. `db.postgresql.query`.
   * `context`: An instance of `Span::Context`.
-  * `&block`: An optional block to wrap with the span. The block is passed the span as an optional argument.
+  * `include_stacktrace`: Whether or not to collect a Stacktrace.
+  * `&block`: An optional block to wrap with the span.
+  The block is passed the span as an optional argument.
 
 Return the span or the return value of the given block.
 
@@ -143,7 +154,8 @@ end
 Arguments:
 
   * `exception`: An instance of `Exception`. **Required**.
-  * `handled`: Whether the error was _handled_ eg. wasn't rescued and was represented to the user. Default: `true`.
+  * `handled`: Whether the error was _handled_ eg. wasn't rescued and was represented
+  to the user. Default: `true`.
 
 Returns `[ElasticAPM::Error]`.
 
@@ -163,7 +175,6 @@ ElasticAPM.report_message('This should probably never happen?!')
 Arguments:
 
   * `message`: A custom error string. **Required**.
-  * `handled`: Whether the error was _handled_ eg. wasn't rescued and was represented to the user. Default: `true`.
 
 Returns `[ElasticAPM::Error]`.
 
@@ -174,12 +185,14 @@ Returns `[ElasticAPM::Error]`.
 [[api-set-tag]]
 ==== `ElasticAPM.set_tag`
 
-Add a tag to the current transaction. Tags are basic key-value pairs that are indexed in your Elasticsearch database and therefore searchable.
+Add a tag to the current transaction.
+Tags are basic key-value pairs that are indexed in your Elasticsearch database and
+therefore searchable.
 
 [source,ruby]
 ----
 before_action do
-  ElasticAPM.set_tag(company_id: current_user.company.id)
+  ElasticAPM.set_tag(:company_id, current_user.company.id)
 end
 ----
 
@@ -194,9 +207,12 @@ Returns the set `value`.
 [[api-set-custom-context]]
 ==== `ElasticAPM.set_custom_context`
 
-Add custom context to the current transaction. Use this to further specify a context that will help you track or diagnose what's going on inside your app.
+Add custom context to the current transaction.
+Use this to further specify a context that will help you track or diagnose what's
+going on inside your app.
 
-If called several times during a transaction the custom context will be destructively merged with `merge!`.
+If called several times during a transaction the custom context will be destructively
+merged with `merge!`.
 
 [source,ruby]
 ----
@@ -223,3 +239,25 @@ Arguments:
 
 Returns the given user
 
+[float]
+=== Data
+
+[float]
+[[api-add-filter]]
+==== `ElasticAPM.add_filter`
+
+Provide a filter to transform payloads before sending.
+
+Arguments:
+
+  * `key`: A unique key identifying the filter
+  * `callable`: An object or proc (responds to `.call(payload)`
+
+Example:
+
+[source,ruby]
+----
+ElasticAPM.add_filter(:filter_pings) do |payload|
+  payload['transactions']&.reject { |t| t['name'] == 'PingsController#index' }
+end
+----
